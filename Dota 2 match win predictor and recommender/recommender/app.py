@@ -4,11 +4,9 @@ from flask import Flask, render_template, session, redirect, url_for
 from flask_wtf import FlaskForm
 from wtforms import SelectField, SubmitField
 from wtforms.validators import DataRequired
+
 from hero_dict import *
 from engine import Engine
-
-import json
-
 from nnpredictor import *
 
 # Creating a dictionary for choices
@@ -18,34 +16,29 @@ app = Flask(__name__, template_folder='html_templates')
 app.config['SECRET_KEY'] = 'mysecretkey'
 
 
-def get_api_string(recommendations, prob):
-    recommendations = list(map(str, recommendations))
-    return json.dumps({'x': recommendations, 'prob_x': prob})
-
-
 class HeroForm(FlaskForm):
 
     radiant_hero_1 = SelectField(
-        u'First Radiant Hero:', choices=choice(heroes_json))
+        u'First Radiant Hero:', choices=choice(heroes_json), validators=[DataRequired()])
     radiant_hero_2 = SelectField(
-        u'Second Radiant Hero:', choices=choice(heroes_json))
+        u'Second Radiant Hero:', choices=choice(heroes_json), validators=[DataRequired()])
     radiant_hero_3 = SelectField(
-        u'Third Radiant Hero:', choices=choice(heroes_json))
+        u'Third Radiant Hero:', choices=choice(heroes_json), validators=[DataRequired()])
     radiant_hero_4 = SelectField(
-        u'Fourth Radiant Hero:', choices=choice(heroes_json))
+        u'Fourth Radiant Hero:', choices=choice(heroes_json), validators=[DataRequired()])
     radiant_hero_5 = SelectField(
-        u'Fifth Radiant Hero:', choices=choice(heroes_json))
+        u'Fifth Radiant Hero:', choices=choice(heroes_json), validators=[DataRequired()])
     dire_hero_1 = SelectField(u'First Dire Hero:',
-                              choices=choice(heroes_json))
+                              choices=choice(heroes_json), validators=[DataRequired()])
     dire_hero_2 = SelectField(
-        u'Second Dire Hero:', choices=choice(heroes_json))
+        u'Second Dire Hero:', choices=choice(heroes_json), validators=[DataRequired()])
     dire_hero_3 = SelectField(u'Third Dire Hero:',
-                              choices=choice(heroes_json))
+                              choices=choice(heroes_json), validators=[DataRequired()])
     dire_hero_4 = SelectField(
-        u'Fourth Dire Hero:', choices=choice(heroes_json))
+        u'Fourth Dire Hero:', choices=choice(heroes_json), validators=[DataRequired()])
     dire_hero_5 = SelectField(u'Fifth Dire Hero:',
-                              choices=choice(heroes_json))
-    submit = SubmitField('Submit')
+                              choices=choice(heroes_json), validators=[DataRequired()])
+    submit = SubmitField('Recommend')
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -88,14 +81,19 @@ def recommendation():
     their_team = dire_team
 
     if len(my_team) >= 5:
-        return 'Your Team is Full! Please remove a hero from your team.'
+        return 'Your Team is Full! Please remove a hero from your team for the system to recommend.'
+    elif len(my_team) == 0 and len(my_team) == 0:
+        return 'Your Team is Empty! Please fill in at least one hero to continue.'
     else:
         engine = Engine(NNPredictor())
         prob_recommendation_pairs = engine.recommend(my_team, their_team)
         recommendations = [hero for prob,
                            hero in prob_recommendation_pairs]
-        prob = engine.predict(my_team, their_team)
-        return render_template('recommendation.html', prediction_text='{}'.format((recommendations, prob)))
+        heroes = [(hero_dictionary(heroes_json)[hero])
+                  for hero in recommendations]
+        prob = (round(engine.predict(my_team, their_team) * 100, 2))
+        probability = f"The probability of your team winning is {prob}% with the proposed team composition."
+        return render_template('recommendation.html', prediction_text=f'{heroes}. {probability}')
 
 
 if __name__ == "__main__":
