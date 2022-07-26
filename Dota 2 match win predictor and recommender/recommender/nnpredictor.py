@@ -15,7 +15,7 @@ def get_hero_human_readable(hero_id):
     return 'Unknown hero: %d' % hero_id
 
 
-FINAL_HERO_ID = hero_ids[-1]
+FINAL_HERO_ID = int(hero_ids[-1])
 NUM_FEATURES = FINAL_HERO_ID * 2
 ENV_PATH = 'model.h5'
 
@@ -37,8 +37,11 @@ class NNPredictor:
         '''Slice hero_id chosen onto the array, add number of heroes to hero_id for dire team'''
         for hero_id in my_team:
             X[0][(hero_id)] = 1
+
+        map(lambda x: x + FINAL_HERO_ID, their_team)
+
         for hero_id in their_team:
-            X[0][(hero_id + FINAL_HERO_ID)] = 1
+            X[0][(hero_id)] = 1
 
         missing_ids = []
         for num in range(0, FINAL_HERO_ID):

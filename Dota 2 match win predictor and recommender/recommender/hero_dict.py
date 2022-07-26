@@ -11,4 +11,6 @@ def choice(heroes_json):
                  for num in range(0, len(heroes))}
 
     choices = list(hero_dict.items())
+    nil_choice = ('Nil', 'Nil')
+    choices.insert(0, nil_choice)
     return choices

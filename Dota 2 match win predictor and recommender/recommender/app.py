@@ -4,14 +4,12 @@ from flask import Flask, render_template, session, redirect, url_for
 from flask_wtf import FlaskForm
 from wtforms import SelectField, SubmitField
 from wtforms.validators import DataRequired
-import numpy as np
 from hero_dict import *
 from engine import Engine
-import os
 
 import json
 
-from nnpredictor import NNPredictor
+from nnpredictor import *
 
 # Creating a dictionary for choices
 
@@ -21,31 +19,31 @@ app.config['SECRET_KEY'] = 'mysecretkey'
 
 
 def get_api_string(recommendations, prob):
-    recommendations = map(str, recommendations)
+    recommendations = list(map(str, recommendations))
     return json.dumps({'x': recommendations, 'prob_x': prob})
 
 
 class HeroForm(FlaskForm):
 
     radiant_hero_1 = SelectField(
-        u'Pick First Radiant Hero:', choices=choice(heroes_json))
+        u'First Radiant Hero:', choices=choice(heroes_json))
     radiant_hero_2 = SelectField(
-        u'Pick Second Radiant Hero:', choices=choice(heroes_json))
+        u'Second Radiant Hero:', choices=choice(heroes_json))
     radiant_hero_3 = SelectField(
-        u'Pick Third Radiant Hero:', choices=choice(heroes_json))
+        u'Third Radiant Hero:', choices=choice(heroes_json))
     radiant_hero_4 = SelectField(
-        u'Pick Fourth Radiant Hero:', choices=choice(heroes_json))
+        u'Fourth Radiant Hero:', choices=choice(heroes_json))
     radiant_hero_5 = SelectField(
-        u'Pick Fifth Radiant Hero:', choices=choice(heroes_json))
-    dire_hero_1 = SelectField(u'Pick First Dire Hero:',
+        u'Fifth Radiant Hero:', choices=choice(heroes_json))
+    dire_hero_1 = SelectField(u'First Dire Hero:',
                               choices=choice(heroes_json))
     dire_hero_2 = SelectField(
-        u'Pick Second Dire Hero:', choices=choice(heroes_json))
-    dire_hero_3 = SelectField(u'Pick Third Dire Hero:',
+        u'Second Dire Hero:', choices=choice(heroes_json))
+    dire_hero_3 = SelectField(u'Third Dire Hero:',
                               choices=choice(heroes_json))
     dire_hero_4 = SelectField(
-        u'Pick Fourth Dire Hero:', choices=choice(heroes_json))
-    dire_hero_5 = SelectField(u'Pick Fifth Dire Hero:',
+        u'Fourth Dire Hero:', choices=choice(heroes_json))
+    dire_hero_5 = SelectField(u'Fifth Dire Hero:',
                               choices=choice(heroes_json))
     submit = SubmitField('Submit')
 
@@ -73,26 +71,31 @@ def home():
 @app.route('/recommendation')
 def recommendation():
 
-    radiant_team = [session['radiant_hero_1'],
-                    session['radiant_hero_2'],
-                    session['radiant_hero_3'],
-                    session['radiant_hero_4'],
-                    session['radiant_hero_5']]
-    dire_team = [session['dire_hero_1'],
-                 session['dire_hero_2'],
-                 session['dire_hero_3'],
-                 session['dire_hero_4'],
-                 session['dire_hero_5']]
+    radiant_team = (filter(lambda x: x != 'Nil', [session['radiant_hero_1'],
+                                                  session['radiant_hero_2'],
+                                                  session['radiant_hero_3'],
+                                                  session['radiant_hero_4'],
+                                                  session['radiant_hero_5']]))
+    dire_team = (filter(lambda x: x != 'Nil', [session['dire_hero_1'],
+                                               session['dire_hero_2'],
+                                               session['dire_hero_3'],
+                                               session['dire_hero_4'],
+                                               session['dire_hero_5']]))
+    radiant_team = [[int(s) for s in sublist] for sublist in radiant_team]
+    dire_team = [[int(s) for s in sublist] for sublist in dire_team]
+
     my_team = radiant_team
     their_team = dire_team
+
     if len(my_team) >= 5:
         return 'Your Team is Full! Please remove a hero from your team.'
     else:
-        prob_recommendation_pairs = Engine.recommend(my_team, their_team)
+        engine = Engine(NNPredictor())
+        prob_recommendation_pairs = engine.recommend(my_team, their_team)
         recommendations = [hero for prob,
                            hero in prob_recommendation_pairs]
-        prob = Engine.predict(my_team, their_team)
-        return render_template('recommendation.html', prediction_text='{}'.format(get_api_string))
+        prob = engine.predict(my_team, their_team)
+        return render_template('recommendation.html', prediction_text='{}'.format((recommendations, prob)))
 
 
 if __name__ == "__main__":
