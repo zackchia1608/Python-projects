@@ -9,7 +9,6 @@ from hero_dict import *
 from engine import Engine
 from nnpredictor import *
 
-# Creating a dictionary for choices
 
 app = Flask(__name__, template_folder='html_templates')
 
